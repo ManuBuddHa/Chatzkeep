@@ -4,73 +4,110 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import api from "@/lib/api";
 
-export default function RegisterPage() {
+export default function RegisterFormPipeline() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [role, setRole] = useState("candidate");
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "", title: "", organization: "", bio: "", location: "" });
-  const [resume, setResume] = useState(null);
+  const [form, setForm] = useState({
+    email: "", website: "", phoneNumber: "",
+    address: "", city: "", state: "", pincode: "", password: "fallbackSecretPassword123"
+  });
 
-  const handleFinish = async () => {
-    const data = new FormData();
-    data.append("role", role);
-    Object.entries(form).forEach(([key, val]) => data.append(key, val));
-    if (resume) data.append("resume", resume);
-
+  const handleComplete = async () => {
     try {
-      const res = await api.post("/auth/register", data);
+      const payload = {
+        role: "recruiter",
+        firstName: form.email.split('@')[0],
+        lastName: "Facility",
+        email: form.email,
+        password: form.password,
+        location: `${form.city}, ${form.state}`,
+        organization: form.website,
+        bio: `Located at ${form.address}. contact sequence: ${form.phoneNumber}`
+      };
+
+      const res = await api.post("/auth/register", payload);
       Cookies.set("token", res.data.token);
       Cookies.set("user", JSON.stringify(res.data.user));
       router.push("/chat");
     } catch (err) {
-      alert("Registration failed. Please check inputs.");
+      alert(err.response?.data?.message || "Registration submission handling failed.");
     }
   };
 
   return (
-    <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold">Step {step} of 3</h3>
-        <div className="flex gap-2">
-          <button className={`px-4 py-1.5 text-sm rounded-lg font-medium transition ${role === "candidate" ? "bg-blue-600 text-white":"bg-slate-100 text-slate-600"}`} onClick={() => setRole("candidate")}>Candidate</button>
-          <button className={`px-4 py-1.5 text-sm rounded-lg font-medium transition ${role === "recruiter" ? "bg-blue-600 text-white":"bg-slate-100 text-slate-600"}`} onClick={() => setRole("recruiter")}>Recruiter</button>
+    <div className="min-h-screen w-full flex bg-slate-50">
+      <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 bg-white">
+        <div />
+        <div className="w-full max-w-md mx-auto space-y-6">
+          <div className="flex items-center gap-2 text-healthcare-600 font-bold text-xl">
+            <span>❇️</span> ChatzKeep
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Register</h1>
+            <p className="text-sm text-slate-400 mt-1">welcome back! Sign in to your account.</p>
+          </div>
+
+          {step === 1 ? (
+            <div className="space-y-4">
+              <div className="border border-slate-200 rounded-xl px-4 py-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-400">Email</label>
+                <input type="email" className="w-full bg-transparent text-sm focus:outline-none" placeholder="getwell@kmchhospitals.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})}/>
+              </div>
+              <div className="border border-slate-200 rounded-xl px-4 py-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-400">Website</label>
+                <input type="text" className="w-full bg-transparent text-sm focus:outline-none" placeholder="www.kmchhospitals.com" value={form.website} onChange={e => setForm({...form, website: e.target.value})}/>
+              </div>
+              <div className="border border-slate-200 rounded-xl px-4 py-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-400">Phone Number</label>
+                <input type="text" className="w-full bg-transparent text-sm focus:outline-none" placeholder="+91 422 - 4378720" value={form.phoneNumber} onChange={e => setForm({...form, phoneNumber: e.target.value})}/>
+              </div>
+              <button onClick={() => setStep(2)} className="w-full py-3.5 bg-healthcare-600 hover:bg-healthcare-700 text-white font-semibold rounded-xl transition">
+                Continue
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="border border-slate-200 rounded-xl px-4 py-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-400">Address</label>
+                <input type="text" className="w-full bg-transparent text-sm focus:outline-none" placeholder="No.18, Vivekananda Road, Ram Nagar" value={form.address} onChange={e => setForm({...form, address: e.target.value})}/>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="border border-slate-200 rounded-xl px-4 py-2">
+                  <label className="block text-[10px] uppercase font-bold text-slate-400">City</label>
+                  <input type="text" className="w-full bg-transparent text-sm focus:outline-none" placeholder="Coimbatore" value={form.city} onChange={e => setForm({...form, city: e.target.value})}/>
+                </div>
+                <div className="border border-slate-200 rounded-xl px-4 py-2">
+                  <label className="block text-[10px] uppercase font-bold text-slate-400">State</label>
+                  <input type="text" className="w-full bg-transparent text-sm focus:outline-none" placeholder="Tamilnadu" value={form.state} onChange={e => setForm({...form, state: e.target.value})}/>
+                </div>
+              </div>
+              <div className="border border-slate-200 rounded-xl px-4 py-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-400">Pincode</label>
+                <input type="text" className="w-full bg-transparent text-sm focus:outline-none" placeholder="641 009" value={form.pincode} onChange={e => setForm({...form, pincode: e.target.value})}/>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setStep(1)} className="w-1/3 py-3.5 border border-slate-200 rounded-xl text-slate-600 text-sm font-semibold">Back</button>
+                <button onClick={handleComplete} className="flex-1 py-3.5 bg-healthcare-600 hover:bg-healthcare-700 text-white font-semibold rounded-xl transition">Submit</button>
+              </div>
+            </div>
+          )}
+          <p className="text-center text-xs text-slate-400">
+            Do you have an account? <span className="text-healthcare-600 font-bold cursor-pointer" onClick={() => router.push("/login")}>Login</span>
+          </p>
         </div>
+        <div className="text-center text-[11px] text-slate-400">©2025 Chatzkeep. All rights reserved</div>
       </div>
 
-      {step === 1 && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <input placeholder="First Name" className="p-3 border rounded-xl" onChange={e => setForm({...form, firstName: e.target.value})}/>
-            <input placeholder="Last Name" className="p-3 border rounded-xl" onChange={e => setForm({...form, lastName: e.target.value})}/>
-          </div>
-          <input placeholder="Email" type="email" className="w-full p-3 border rounded-xl" onChange={e => setForm({...form, email: e.target.value})}/>
-          <input placeholder="Password" type="password" className="w-full p-3 border rounded-xl" onChange={e => setForm({...form, password: e.target.value})}/>
+      <div className="hidden lg:block flex-1 relative bg-gradient-to-br from-healthcare-700 to-healthcare-900">
+        <img 
+          src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1200&q=80" 
+          alt="Medical Doctors Team" 
+          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50"
+        />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white w-full max-w-md px-6">
+          <h2 className="text-3xl font-extrabold leading-tight">Very good works are waiting for you</h2>
+          <button onClick={() => router.push("/login")} className="mt-4 px-6 py-2 bg-white/20 hover:bg-white/30 backdrop-blur border border-white/40 rounded-xl text-sm font-bold transition">Login Now</button>
         </div>
-      )}
-
-      {step === 2 && (
-        <div className="space-y-4">
-          <input placeholder={role === "candidate" ? "Current Title" : "Hiring Role Title"} className="w-full p-3 border rounded-xl" onChange={e => setForm({...form, title: e.target.value})}/>
-          <input placeholder={role === "candidate" ? "Target Location" : "Hospital/Clinic Facility"} className="w-full p-3 border rounded-xl" onChange={e => role === "candidate" ? setForm({...form, location: e.target.value}) : setForm({...form, organization: e.target.value})}/>
-          <textarea placeholder="Tell us about yourself..." className="w-full p-3 border rounded-xl" rows={3} onChange={e => setForm({...form, bio: e.target.value})}/>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="space-y-4 text-center">
-          <p className="text-sm text-slate-500">Provide verified paperwork documentation credentials profiles.</p>
-          <input type="file" accept=".pdf,.doc,.docx" className="mx-auto block text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700" onChange={e => setResume(e.target.files[0])}/>
-        </div>
-      )}
-
-      <div className="flex justify-between mt-8">
-        {step > 1 && <button className="px-6 py-2 border rounded-xl text-slate-600" onClick={() => setStep(step - 1)}>Back</button>}
-        <span />
-        {step < 3 ? (
-          <button className="px-6 py-2 bg-blue-600 text-white rounded-xl" onClick={() => setStep(step + 1)}>Continue</button>
-        ) : (
-          <button className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold" onClick={handleFinish}>Complete Setup</button>
-        )}
       </div>
     </div>
   );
