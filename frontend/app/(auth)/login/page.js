@@ -23,12 +23,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex bg-slate-50">
-      {/* Left Side: Login Form Card Component */}
       <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 bg-white">
         <div />
         <div className="w-full max-w-md mx-auto space-y-6">
           <div className="flex items-center gap-2 text-healthcare-600 font-bold text-xl">
-            <span className="p-2 bg-healthcare-50 rounded-lg">❇️</span> ChatzKeep
+            <span>❇️</span> ChatzKeep
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Login</h1>
@@ -48,7 +47,7 @@ export default function LoginPage() {
               <input type="password" required className="w-full bg-transparent text-sm focus:outline-none pt-0.5" placeholder="••••••••" onChange={e => setForm({...form, password: e.target.value})}/>
             </div>
 
-            <button type="submit" className="w-full py-3.5 bg-healthcare-600 hover:bg-healthcare-700 text-white font-semibold rounded-xl transition shadow-md shadow-healthcare-600/10">
+            <button type="submit" className="w-full py-3.5 bg-healthcare-600 hover:bg-healthcare-700 text-white font-semibold rounded-xl transition shadow-md">
               Login
             </button>
           </form>
@@ -60,17 +59,14 @@ export default function LoginPage() {
         <div className="text-center text-[11px] text-slate-400">©2025 Chatzkeep. All rights reserved</div>
       </div>
 
-      {/* Right Side: High-Fidelity Healthcare Wallpaper Cover Frame */}
-      <div className="hidden lg:block flex-1 relative bg-gradient-to-br from-healthcare-700 to-healthcare-900 overflow-hidden">
-        <div className="absolute inset-0 bg-black/10 z-10" />
+      <div className="hidden lg:block flex-1 relative bg-gradient-to-br from-healthcare-700 to-healthcare-900">
         <img 
           src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=80" 
-          alt="Healthcare Professionals Staff" 
+          alt="Healthcare Staff Cover" 
           className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-60"
         />
         <div className="absolute bottom-16 left-16 z-20 text-white max-w-md">
           <h2 className="text-3xl font-bold leading-tight">Very good works are waiting for you</h2>
-          <p className="text-healthcare-100/80 text-sm mt-2">Connect seamlessly with prime clinic centers and medical systems instantly.</p>
         </div>
       </div>
     </div>

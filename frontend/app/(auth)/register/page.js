@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import api from "@/lib/api";
 
-export default function RegisterFormPipeline() {
+export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     email: "", website: "", phoneNumber: "",
-    address: "", city: "", state: "", pincode: "", password: "fallbackSecretPassword123"
+    address: "", city: "", state: "", pincode: "", password: "defaultSecurePassword123"
   });
 
   const handleComplete = async () => {
@@ -30,7 +30,7 @@ export default function RegisterFormPipeline() {
       Cookies.set("user", JSON.stringify(res.data.user));
       router.push("/chat");
     } catch (err) {
-      alert(err.response?.data?.message || "Registration submission handling failed.");
+      alert("Registration submission handling failed.");
     }
   };
 
@@ -69,7 +69,7 @@ export default function RegisterFormPipeline() {
             <div className="space-y-4">
               <div className="border border-slate-200 rounded-xl px-4 py-2">
                 <label className="block text-[10px] uppercase font-bold text-slate-400">Address</label>
-                <input type="text" className="w-full bg-transparent text-sm focus:outline-none" placeholder="No.18, Vivekananda Road, Ram Nagar" value={form.address} onChange={e => setForm({...form, address: e.target.value})}/>
+                <input type="text" className="w-full bg-transparent text-sm focus:outline-none" placeholder="No.18, Vivekananda Road" value={form.address} onChange={e => setForm({...form, address: e.target.value})}/>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="border border-slate-200 rounded-xl px-4 py-2">
@@ -91,9 +91,6 @@ export default function RegisterFormPipeline() {
               </div>
             </div>
           )}
-          <p className="text-center text-xs text-slate-400">
-            Do you have an account? <span className="text-healthcare-600 font-bold cursor-pointer" onClick={() => router.push("/login")}>Login</span>
-          </p>
         </div>
         <div className="text-center text-[11px] text-slate-400">©2025 Chatzkeep. All rights reserved</div>
       </div>
@@ -101,13 +98,9 @@ export default function RegisterFormPipeline() {
       <div className="hidden lg:block flex-1 relative bg-gradient-to-br from-healthcare-700 to-healthcare-900">
         <img 
           src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1200&q=80" 
-          alt="Medical Doctors Team" 
+          alt="Doctors Team" 
           className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50"
         />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white w-full max-w-md px-6">
-          <h2 className="text-3xl font-extrabold leading-tight">Very good works are waiting for you</h2>
-          <button onClick={() => router.push("/login")} className="mt-4 px-6 py-2 bg-white/20 hover:bg-white/30 backdrop-blur border border-white/40 rounded-xl text-sm font-bold transition">Login Now</button>
-        </div>
       </div>
     </div>
   );

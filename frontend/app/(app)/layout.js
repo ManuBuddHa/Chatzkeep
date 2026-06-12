@@ -27,14 +27,12 @@ export default function MainAppLayout({ children }) {
     setUser(parsedUser);
     localStorage.setItem("user", userStr);
 
-    // Load static alert logs
     const loadNotifs = async () => {
       const res = await api.get("/notifications");
       setNotifications(res.data);
     };
     loadNotifs();
 
-    // Hook runtime socket events stream
     socketRef.current = io("http://localhost:4000", { auth: { token } });
     socketRef.current.on("notification", (notif) => {
       setNotifications(prev => [notif, ...prev]);
@@ -42,6 +40,14 @@ export default function MainAppLayout({ children }) {
 
     return () => socketRef.current?.disconnect();
   }, [router]);
+
+  // Handle clearing storage and redirecting to authentication
+  const handleLogout = () => {
+    Cookies.remove("token");
+    Cookies.remove("user");
+    localStorage.removeItem("user");
+    router.replace("/login");
+  };
 
   const handleMarkAllRead = async () => {
     await api.post("/notifications/read-all");
@@ -59,7 +65,7 @@ export default function MainAppLayout({ children }) {
 
   return (
     <div className="min-h-screen flex bg-slate-100 text-slate-900 antialiased font-sans">
-      {/* Structural Left Navigation Frame */}
+      {/* Sidebar Layout Section */}
       <aside className="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-4 shrink-0">
         <div className="space-y-6">
           <div className="flex items-center gap-2 px-3 py-2 text-healthcare-600 font-extrabold text-lg">
@@ -77,15 +83,31 @@ export default function MainAppLayout({ children }) {
           </nav>
         </div>
 
-        {/* Floating conversion marketing subscription banner container element layout context */}
-        <div className="p-4 bg-gradient-to-br from-healthcare-600 to-healthcare-700 text-white rounded-2xl relative overflow-hidden space-y-2 shadow-inner">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-healthcare-100">Get Unlimited Access</div>
-          <p className="text-[10px] text-healthcare-50/80 leading-relaxed">Subscription Keeps Going And Doing And Going...</p>
-          <button className="w-full py-2 bg-white text-healthcare-700 text-[10px] font-black rounded-lg uppercase tracking-wide hover:bg-healthcare-50 transition">Subscribe Now</button>
+        {/* Bottom Profile and Logout Frame Container */}
+        <div className="space-y-4">
+          {/* Permanent Action Marketing Banner */}
+          <div className="p-4 bg-gradient-to-br from-healthcare-600 to-healthcare-700 text-white rounded-2xl relative overflow-hidden space-y-2">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-healthcare-100">Get Unlimited Access</div>
+            <p className="text-[10px] text-healthcare-50/80 leading-relaxed">Subscription Keeps Going And Doing...</p>
+            <button className="w-full py-2 bg-white text-healthcare-700 text-[10px] font-black rounded-lg uppercase tracking-wide">Subscribe Now</button>
+          </div>
+
+          {/* User Account Details + Clickable Logout Action Link */}
+          <div className="border-t border-slate-100 pt-3 px-2 flex items-center justify-between">
+            <div className="overflow-hidden">
+              <div className="text-xs font-bold text-slate-800 truncate">{user.firstName} {user.lastName?.[0]}.</div>
+              <div className="text-[10px] text-slate-400 capitalize">{user.role}</div>
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="text-xs font-bold text-red-500 hover:text-red-700 hover:underline px-2 py-1 bg-red-50 rounded-lg transition"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Main Structural Yield Node Column Wrapper */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <TopBar title={pathname === "/settings" ? "Settings" : "Message"} onToggleNotifications={() => setNotifOpen(!notifOpen)} unreadCount={unreadCount}/>
         

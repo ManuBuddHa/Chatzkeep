@@ -19,11 +19,38 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// 1. Dynamic Directory User Search Endpoint
+router.get("/search", authRequired, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim() === "") {
+      return res.json([]);
+    }
+
+    const users = await User.find({
+      _id: { $ne: req.user.id }, 
+      $or: [
+        { firstName: { $regex: q, $options: "i" } },
+        { lastName: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } }
+      ]
+    })
+    .select("firstName lastName email title organization avatarUrl")
+    .limit(10);
+
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to query system directory user registry logs." });
+  }
+});
+
+// 2. Identity Resource Profile Self Fetch Target
 router.get("/me", authRequired, async (req, res) => {
   const user = await User.findById(req.user.id).select("-passwordHash");
   res.json(user);
 });
 
+// 3. Identity Resource Update Endpoint
 router.put("/me", authRequired, upload.fields([{ name: "avatar", maxCount: 1 }, { name: "resume", maxCount: 1 }]), async (req, res) => {
   try {
     const updates = { ...req.body };

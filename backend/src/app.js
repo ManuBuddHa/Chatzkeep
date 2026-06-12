@@ -16,6 +16,7 @@ const __dirname = path.dirname(__filename);
 
 app.use(morgan("dev"));
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:3000", credentials: true }));
+
 app.use(express.json());
 
 app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
