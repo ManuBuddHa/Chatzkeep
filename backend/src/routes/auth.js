@@ -1,18 +1,34 @@
 import express from "express";
 import bcrypt from "bcrypt";
+import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
 import { User } from "../models/User.js";
 import { signToken } from "../utils/jwt.js";
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// 1. Unified Registration Handler Pipeline
-router.post("/register", async (req, res) => {
+// Configure storage configuration for candidate resume documents
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../../../uploads"));
+  },
+  filename: (req, file, cb) => {
+    cb(null, `resume-${Date.now()}${path.extname(file.originalname)}`);
+  }
+});
+const upload = multer({ storage });
+
+// 1. Unified Registration Handler Pipeline (With Multi-part Text Parsing Configured)
+router.post("/register", upload.single("resume"), async (req, res) => {
   try {
     const { email, password, role, website, phoneNumber, address, city, state, pincode, firstName } = req.body;
     
-    // Strict multi-step form parameter checking
+    // Strict multi-step form parameter verification
     if (!email || !email.trim()) {
-      return res.status(400).json({ message: "Registration failure: Email is required." });
+      return res.status(400).json({ message: "Registration failure: Email parameter is required." });
     }
     if (!password || password.length < 6) {
       return res.status(400).json({ message: "Registration failure: Password must be at least 6 characters long." });
@@ -36,18 +52,25 @@ router.post("/register", async (req, res) => {
     // Default display string parsing
     const derivedName = firstName ? firstName.trim() : cleanEmail.split('@')[0].toUpperCase();
 
+    // Map attachment URL if profile file is dispatched from request payload
+    let uploadedResumeUrl = "";
+    if (req.file) {
+      uploadedResumeUrl = `/uploads/${req.file.filename}`;
+    }
+
     const user = await User.create({
       role: role || "recruiter",
       firstName: derivedName,
       email: cleanEmail,
-      passwordHash, // Securely storing the cryptographically hashed password parameter[cite: 1]
+      passwordHash, 
       website: website ? website.trim() : "",
       phoneNumber: phoneNumber ? phoneNumber.trim() : "",
       address: address.trim(),
       city: city.trim(),
       state: state.trim(),
       pincode: pincode.trim(),
-      title: role === "candidate" ? derivedName : "Healthcare Facility Recruiter"
+      title: role === "candidate" ? derivedName : "Healthcare Facility Recruiter",
+      resumeUrl: uploadedResumeUrl
     });
 
     // Create session signature payload tokens
@@ -59,7 +82,7 @@ router.post("/register", async (req, res) => {
     });
   } catch (err) {
     console.error("Backend register mapping compilation crash:", err);
-    res.status(500).json({ message: "Internal server data compilation or connection handling exception." });
+    res.status(500).json({ message: "Internal server data compilation exception." });
   }
 });
 

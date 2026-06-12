@@ -68,7 +68,8 @@ export default function RegisterPage() {
   };
 
   const handleNextStep = () => {
-    if (step === 1 && validateStepOne()) {
+    if (validateStepOne()) {
+      setError(""); // Clean error state cleanly
       setStep(2);
     }
   };
@@ -77,6 +78,7 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!validateStepTwo()) return;
 
+    setError("");
     const data = new FormData();
     data.append("role", role);
     data.append("email", form.email.trim().toLowerCase());
@@ -104,13 +106,12 @@ export default function RegisterPage() {
       Cookies.set("user", JSON.stringify(res.data.user));
       router.push("/chat");
     } catch (err) {
-      setError(err.response?.data?.message || "Registration pipeline encountered an unexpected validation exception.");
+      setError(err.response?.data?.message || "Registration processing encountered an issue on the server.");
     }
   };
 
   return (
     <div className="min-h-screen w-full flex bg-slate-50">
-      {/* Left Form Input Column Wrapper */}
       <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 bg-white">
         <div />
         <div className="w-full max-w-md mx-auto space-y-6">
@@ -122,7 +123,6 @@ export default function RegisterPage() {
             <p className="text-sm text-slate-400 mt-1">welcome back! Sign in to your account.</p>
           </div>
 
-          {/* User Account Role Toggle Tabs */}
           {step === 1 && (
             <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 shrink-0">
               <button type="button" className={`py-2 text-xs font-bold rounded-lg transition-all ${role === "recruiter" ? "bg-healthcare-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-800"}`} onClick={() => { setRole("recruiter"); setError(""); }}>🏥 Healthcare Facility</button>
@@ -130,9 +130,13 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100 font-medium">{error}</div>}
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100 font-semibold animate-in fade-in duration-100">
+              {error}
+            </div>
+          )}
 
-          {/* STEP 1: Account Credentials & Password Set */}
+          {/* STEP 1 SECTION */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in duration-150">
               <div className="border border-slate-200 rounded-xl px-4 py-2">
@@ -162,13 +166,13 @@ export default function RegisterPage() {
                 <input type="text" className="w-full bg-transparent text-sm focus:outline-none pt-0.5" placeholder="+91 422 - 4378720" value={form.phoneNumber} onChange={e => setForm({...form, phoneNumber: e.target.value})}/>
               </div>
               
-              <button onClick={handleNextStep} className="w-full py-3.5 bg-healthcare-600 hover:bg-healthcare-700 text-white font-semibold rounded-xl transition shadow-md shadow-healthcare-600/10">
+              <button type="button" onClick={handleNextStep} className="w-full py-3.5 bg-healthcare-600 hover:bg-healthcare-700 text-white font-semibold rounded-xl transition shadow-md">
                 Continue
               </button>
             </div>
           )}
 
-          {/* STEP 2: Address Details & Optional Resume Files */}
+          {/* STEP 2 SECTION */}
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in duration-150">
               <div className="border border-slate-200 rounded-xl px-4 py-2">
@@ -201,8 +205,8 @@ export default function RegisterPage() {
               )}
 
               <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(1)} className="w-1/3 py-3.5 border border-slate-200 rounded-xl text-slate-600 text-sm font-semibold hover:bg-slate-50 transition">Back</button>
-                <button onClick={handleComplete} className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition shadow-md shadow-emerald-600/10">Submit</button>
+                <button type="button" onClick={() => { setError(""); setStep(1); }} className="w-1/3 py-3.5 border border-slate-200 rounded-xl text-slate-600 text-sm font-semibold hover:bg-slate-50 transition">Back</button>
+                <button type="button" onClick={handleComplete} className="flex-1 py-3.5 bg-healthcare-600 hover:bg-healthcare-700 text-white font-semibold rounded-xl transition shadow-md">Submit</button>
               </div>
             </div>
           )}
@@ -212,9 +216,8 @@ export default function RegisterPage() {
         <div className="text-center text-[11px] text-slate-400">©2025 Chatzkeep. All rights reserved</div>
       </div>
 
-      {/* Right Decorative Healthcare Backdrop Graphic */}
       <div className="hidden lg:block flex-1 relative bg-gradient-to-br from-healthcare-700 to-healthcare-900 overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1200&q=80" alt="Cover Backdrop" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50"/>
+        <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1200&q=80" alt="Cover" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50"/>
       </div>
     </div>
   );

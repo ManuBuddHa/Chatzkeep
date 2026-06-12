@@ -6,15 +6,18 @@ const userSchema = new mongoose.Schema(
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, default: "", trim: true },
     email: { type: String, unique: true, required: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true }, // Houses the bcrypt secured hash[cite: 1]
+    passwordHash: { type: String, required: true },
     
-    // Aligned dataset parameters mapped explicitly from task PDF screens[cite: 1]
+    // Aligned dataset parameters mapped explicitly from task PDF screens
     website: { type: String, default: "", trim: true },
     phoneNumber: { type: String, default: "", trim: true },
     address: { type: String, required: true, trim: true },
     city: { type: String, required: true, trim: true },
     state: { type: String, required: true, trim: true },
     pincode: { type: String, required: true, trim: true },
+    
+    // Resume file storage destination link string
+    resumeUrl: { type: String, default: "" }, 
     
     avatarUrl: { type: String, default: "" },
     title: { type: String, default: "" },
