@@ -17,7 +17,7 @@ export default function ChatView() {
   const [currentUser, setCurrentUser] = useState({});
   const API_BASE = "http://localhost:4000";
 
-  // Initial setup: Fetch active conversations list
+  // Load initial conversation data list metrics
   useEffect(() => {
     setCurrentUser(JSON.parse(Cookies.get("user") || "{}"));
     const init = async () => {
@@ -27,27 +27,24 @@ export default function ChatView() {
     init();
   }, []);
 
-  // Sync real-time socket listeners
+  // Synchronize dynamic socket channels layout parameters
   useEffect(() => {
     const token = Cookies.get("token");
     if (!token) return;
 
     socketRef.current = io(API_BASE, { auth: { token } });
 
-    // Background Room Fix: Listen for background channel sync invites from other users
     socketRef.current.on("forceJoinRoom", (conversationId) => {
       socketRef.current.emit("joinConversation", conversationId);
-      
-      // Instantly pull updated logs to append the new message to the sidebar preview
       api.get("/chat/conversations").then(res => setConversations(res.data));
     });
 
     socketRef.current.on("newMessage", (msg) => {
-      // Append the message to the view context window if the matching chat window is open
       setSelectedConvo(currentSelected => {
         if (currentSelected && (msg.conversation === currentSelected._id || msg.conversation?._id === currentSelected._id)) {
+          // FIX: Dedup check to handle real-time messaging pushes without duplicate keys
           setMessages(prev => {
-            if (prev.some(m => m._id === msg._id)) return prev; // Avoid message duplication
+            if (prev.some(m => m._id === msg._id)) return prev; 
             return [...prev, msg];
           });
         }
@@ -55,7 +52,6 @@ export default function ChatView() {
       });
     });
 
-    // Automatically join the room if a conversation is already actively selected
     if (selectedConvo) {
       socketRef.current.emit("joinConversation", selectedConvo._id);
     }
@@ -81,18 +77,25 @@ export default function ChatView() {
     fd.append("text", text);
     if (file) fd.append("attachment", file);
 
-    const res = await api.post(`/chat/conversations/${selectedConvo._id}/messages`, fd, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
+    try {
+      const res = await api.post(`/chat/conversations/${selectedConvo._id}/messages`, fd, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
 
-    // Local UI optimization append layer
-    setMessages(prev => [...prev, res.data]);
-    setText("");
-    setFile(null);
+      // FIX: Add a dedup check here as well to make sure we don't preemptively double-mount
+      setMessages(prev => {
+        if (prev.some(m => m._id === res.data._id)) return prev;
+        return [...prev, res.data];
+      });
 
-    // Refresh inbox list layout metrics values
-    const refreshInbox = await api.get("/chat/conversations");
-    setConversations(refreshInbox.data);
+      setText("");
+      setFile(null);
+
+      const refreshInbox = await api.get("/chat/conversations");
+      setConversations(refreshInbox.data);
+    } catch (err) {
+      console.error("Message send failed:", err);
+    }
   };
 
   const handleChatCreated = (newConvo) => {
