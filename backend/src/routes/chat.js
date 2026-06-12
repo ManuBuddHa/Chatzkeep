@@ -21,21 +21,31 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// 1. Fetch Conversations List
 router.get("/conversations", authRequired, async (req, res) => {
-  const conversations = await Conversation.find({ participants: req.user.id })
-    .populate("participants", "firstName lastName avatarUrl role organization title")
-    .sort({ updatedAt: -1 });
-  res.json(conversations);
+  try {
+    const conversations = await Conversation.find({ participants: req.user.id })
+      .populate("participants", "firstName lastName avatarUrl role organization title")
+      .sort({ updatedAt: -1 });
+    res.json(conversations);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch conversations." });
+  }
 });
 
+// 2. Fetch Chat History Messages
 router.get("/conversations/:id/messages", authRequired, async (req, res) => {
-  const messages = await Message.find({ conversation: req.params.id })
-    .populate("sender", "firstName lastName avatarUrl")
-    .sort({ createdAt: 1 });
-  res.json(messages);
+  try {
+    const messages = await Message.find({ conversation: req.params.id })
+      .populate("sender", "firstName lastName avatarUrl")
+      .sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch chat history messages." });
+  }
 });
 
-// Single Unified Controller Strategy: Message creation through both REST and WebSockets safely
+// 3. Dispatch Message Endpoint (REST Handler with Real-Time Background Synchronization Trigger)
 router.post("/conversations/:id/messages", authRequired, upload.single("attachment"), async (req, res) => {
   try {
     const conversationId = req.params.id;
@@ -68,11 +78,18 @@ router.post("/conversations/:id/messages", authRequired, upload.single("attachme
 
     const populated = await message.populate("sender", "firstName lastName avatarUrl");
 
-    // Secure Pipeline Push: Broadcast updates using IO instances securely inside endpoints
+    // Grab the unified socket instance bound to app context
     const io = req.app.get("io");
+
+    // Force all conversation members to explicitly mount the background websocket listener pipeline room
+    convo.participants.forEach(pId => {
+      io.to(pId.toString()).emit("forceJoinRoom", conversationId);
+    });
+
+    // Broadcast update downwards instantly
     io.to(`conversation:${conversationId}`).emit("newMessage", populated);
 
-    // Track active notifications
+    // Track dynamic floating alert log entry pushes
     const recipients = convo.participants.filter(p => p.toString() !== req.user.id);
     for (const rec of recipients) {
       const notif = await Notification.create({
@@ -91,15 +108,28 @@ router.post("/conversations/:id/messages", authRequired, upload.single("attachme
   }
 });
 
+// 4. Initialize/Create New Conversation Document Instance
 router.post("/conversations", authRequired, async (req, res) => {
-  const { participantId } = req.body;
-  let convo = await Conversation.findOne({
-    participants: { $all: [req.user.id, participantId] }
-  });
-  if (!convo) {
-    convo = await Conversation.create({ participants: [req.user.id, participantId] });
+  try {
+    const { participantId } = req.body;
+    if (!participantId) return res.status(400).json({ message: "participantId is required." });
+
+    let convo = await Conversation.findOne({
+      participants: { $all: [req.user.id, participantId] }
+    });
+    
+    if (!convo) {
+      convo = await Conversation.create({ participants: [req.user.id, participantId] });
+    }
+    
+    // Populate details immediately so frontend can render identity fields without refreshing
+    const populatedConvo = await Conversation.findById(convo._id)
+      .populate("participants", "firstName lastName avatarUrl role organization title");
+
+    res.status(201).json(populatedConvo);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create conversation channel." });
   }
-  res.status(201).json(convo);
 });
 
 export default router;

@@ -17,6 +17,7 @@ export default function ChatView() {
   const [currentUser, setCurrentUser] = useState({});
   const API_BASE = "http://localhost:4000";
 
+  // Initial setup: Fetch active conversations list
   useEffect(() => {
     setCurrentUser(JSON.parse(Cookies.get("user") || "{}"));
     const init = async () => {
@@ -24,16 +25,43 @@ export default function ChatView() {
       setConversations(res.data);
     };
     init();
+  }, []);
 
-    socketRef.current = io(API_BASE, { auth: { token: Cookies.get("token") } });
-    socketRef.current.on("newMessage", (msg) => {
-      if (msg.conversation === selectedConvo?._id || (selectedConvo && msg.conversation?._id === selectedConvo._id)) {
-        setMessages(prev => [...prev, msg]);
-      }
+  // Sync real-time socket listeners
+  useEffect(() => {
+    const token = Cookies.get("token");
+    if (!token) return;
+
+    socketRef.current = io(API_BASE, { auth: { token } });
+
+    // Background Room Fix: Listen for background channel sync invites from other users
+    socketRef.current.on("forceJoinRoom", (conversationId) => {
+      socketRef.current.emit("joinConversation", conversationId);
+      
+      // Instantly pull updated logs to append the new message to the sidebar preview
+      api.get("/chat/conversations").then(res => setConversations(res.data));
     });
 
-    return () => socketRef.current.disconnect();
-  }, [selectedConvo]);
+    socketRef.current.on("newMessage", (msg) => {
+      // Append the message to the view context window if the matching chat window is open
+      setSelectedConvo(currentSelected => {
+        if (currentSelected && (msg.conversation === currentSelected._id || msg.conversation?._id === currentSelected._id)) {
+          setMessages(prev => {
+            if (prev.some(m => m._id === msg._id)) return prev; // Avoid message duplication
+            return [...prev, msg];
+          });
+        }
+        return currentSelected;
+      });
+    });
+
+    // Automatically join the room if a conversation is already actively selected
+    if (selectedConvo) {
+      socketRef.current.emit("joinConversation", selectedConvo._id);
+    }
+
+    return () => socketRef.current?.disconnect();
+  }, [selectedConvo?._id]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,7 +71,6 @@ export default function ChatView() {
     setSelectedConvo(convo);
     const res = await api.get(`/chat/conversations/${convo._id}/messages`);
     setMessages(res.data);
-    socketRef.current.emit("joinConversation", convo._id);
   };
 
   const handleSend = async (e) => {
@@ -54,12 +81,18 @@ export default function ChatView() {
     fd.append("text", text);
     if (file) fd.append("attachment", file);
 
-    await api.post(`/chat/conversations/${selectedConvo._id}/messages`, fd, {
+    const res = await api.post(`/chat/conversations/${selectedConvo._id}/messages`, fd, {
       headers: { "Content-Type": "multipart/form-data" }
     });
 
+    // Local UI optimization append layer
+    setMessages(prev => [...prev, res.data]);
     setText("");
     setFile(null);
+
+    // Refresh inbox list layout metrics values
+    const refreshInbox = await api.get("/chat/conversations");
+    setConversations(refreshInbox.data);
   };
 
   const handleChatCreated = (newConvo) => {
