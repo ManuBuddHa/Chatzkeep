@@ -1,5 +1,4 @@
-// frontend/app/layout.js
-import "./globals.css"; // <-- THIS IS CRITICAL. If this is missing, Tailwind won't load!
+import "./globals.css"; 
 
 export const metadata = {
   title: "ChatzKeep - Healthcare Recruitment Platform",
